@@ -1,0 +1,103 @@
+# Dev stack only. Prod is k8s (infra/k8s).
+#
+# Notes:
+#  - Kafka runs in KRaft mode (no zookeeper) to keep compose short. The blueprint
+#    lists zookeeper separately but confluent images support KRaft now and it's
+#    one less moving part in dev.
+#  - MLflow + frontend are commented out until phase 3 / phase 5. Uncomment as needed.
+#  - Ports are bound to localhost only so we don't expose the dev stack.
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-allgreen}
+      POSTGRES_USER: ${POSTGRES_USER:-allgreen}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-allgreen}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    environment:
+      # KRaft mode
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk  # fixed so the volume survives restarts
+    volumes:
+      - kafkadata:/var/lib/kafka/data
+    ports:
+      - "127.0.0.1:9092:9092"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.backend
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+    env_file: .env
+    volumes:
+      - ./backend:/app/backend
+      - ./ml:/app/ml
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+      kafka:    { condition: service_healthy }
+
+  # --- phase 2+ ---
+  # worker:
+  #   build: { context: ., dockerfile: infra/docker/Dockerfile.backend }
+  #   command: python -m backend.workers.kafka_consumer
+  #   env_file: .env
+  #   depends_on: [kafka, redis, postgres]
+
+  # --- phase 3+ ---
+  # mlflow:
+  #   image: ghcr.io/mlflow/mlflow:v2.12.1
+  #   command: mlflow server --host 0.0.0.0 --backend-store-uri sqlite:////mlflow/mlflow.db
+  #   volumes: [mlflowdata:/mlflow]
+  #   ports: ["127.0.0.1:5000:5000"]
+
+  # --- phase 5+ ---
+  # frontend:
+  #   build: { context: ., dockerfile: infra/docker/Dockerfile.frontend }
+  #   ports: ["127.0.0.1:3000:3000"]
+  #   depends_on: [api]
+
+volumes:
+  pgdata:
+  kafkadata:
+  # mlflowdata:

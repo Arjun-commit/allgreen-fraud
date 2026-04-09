@@ -1,0 +1,38 @@
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# node / frontend
+node_modules/
+dist/
+build/
+.vite/
+
+# ML artifacts (too big for git; use MLflow / object storage)
+ml/lstm/artifacts/
+ml/xgboost/artifacts/
+mlruns/
+*.pt
+*.ckpt
+*.joblib
+
+# docker
+*.log
+
+# editor
+.vscode/
+.idea/
+.DS_Store
