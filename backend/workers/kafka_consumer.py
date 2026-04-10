@@ -1,30 +1,44 @@
-"""Kafka consumer — session + transaction events into the DB / feature store.
+"""Kafka consumer — drives event_handlers over the raw topics.
 
-Phase 2. For now it's a skeleton that you can run to verify the broker
-connection works end-to-end.
-
+Run:
     python -m backend.workers.kafka_consumer
+
+Design:
+- Single consumer group `allgreen-ingest`, manual offset commits after DB write.
+- At-least-once. Duplicates on session_events are tolerable — the feature
+  extractor groups by (session_id, ts_ms) so a double-insert only widens the
+  window, it doesn't corrupt features.
+- confluent_kafka is lazy-imported inside build_consumer() so unit tests can
+  import this module without librdkafka installed.
 """
 
 from __future__ import annotations
 
 import signal
-import sys
+from typing import Any
 
+import orjson
 import structlog
-from confluent_kafka import Consumer, KafkaException
 
-from backend.config import get_settings
+from backend.db.session import SessionLocal
+from backend.kafka import topics
 from backend.logging_setup import configure_logging
+from backend.workers.event_handlers import (
+    handle_session_events,
+    handle_transaction,
+)
 
 configure_logging()
 log = structlog.get_logger()
 
+SUBSCRIBE_TO = [topics.SESSION_EVENTS_RAW, topics.TRANSACTION_EVENTS_RAW]
 
-TOPICS = ["session.events.raw", "transaction.events.raw"]
 
+def build_consumer() -> Any:
+    from confluent_kafka import Consumer  # type: ignore[import-not-found]
 
-def build_consumer() -> Consumer:
+    from backend.config import get_settings
+
     settings = get_settings()
     return Consumer(
         {
@@ -32,25 +46,47 @@ def build_consumer() -> Consumer:
             "group.id": "allgreen-ingest",
             "auto.offset.reset": "earliest",
             "enable.auto.commit": False,
+            "max.poll.interval.ms": 300000,
         }
     )
 
 
+def _process_one(topic: str, payload: dict) -> None:
+    db = SessionLocal()
+    try:
+        if topic == topics.SESSION_EVENTS_RAW:
+            n = handle_session_events(db, payload)
+            log.debug("consumer.session.persisted", count=n)
+        elif topic == topics.TRANSACTION_EVENTS_RAW:
+            handle_transaction(db, payload)
+            log.debug("consumer.tx.persisted")
+        else:
+            log.warning("consumer.unknown_topic", topic=topic)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
 def run() -> int:
+    from confluent_kafka import KafkaException  # type: ignore[import-not-found]
+
     consumer = build_consumer()
-    consumer.subscribe(TOPICS)
+    consumer.subscribe(SUBSCRIBE_TO)
+    log.info("consumer.start", topics=SUBSCRIBE_TO)
 
     stop = False
 
-    def _handle_signal(signum, frame):  # noqa: ANN001
+    def _signal(signum, _frame):  # noqa: ANN001
         nonlocal stop
         log.info("consumer.signal", signum=signum)
         stop = True
 
-    signal.signal(signal.SIGINT, _handle_signal)
-    signal.signal(signal.SIGTERM, _handle_signal)
+    signal.signal(signal.SIGINT, _signal)
+    signal.signal(signal.SIGTERM, _signal)
 
-    log.info("consumer.start", topics=TOPICS)
     try:
         while not stop:
             msg = consumer.poll(1.0)
@@ -59,14 +95,23 @@ def run() -> int:
             if msg.error():
                 raise KafkaException(msg.error())
 
-            # TODO(phase-2): decode JSON, route by topic, persist.
-            log.debug(
-                "consumer.msg",
-                topic=msg.topic(),
-                partition=msg.partition(),
-                offset=msg.offset(),
-            )
-            consumer.commit(msg)
+            try:
+                payload = orjson.loads(msg.value())
+            except orjson.JSONDecodeError:
+                log.warning("consumer.bad_json", topic=msg.topic(), offset=msg.offset())
+                consumer.commit(msg)
+                continue
+
+            try:
+                _process_one(msg.topic(), payload)
+                consumer.commit(msg)
+            except Exception:
+                log.exception(
+                    "consumer.handler_failed",
+                    topic=msg.topic(),
+                    offset=msg.offset(),
+                )
+                # Don't commit — leave for retry on the next poll.
     finally:
         consumer.close()
         log.info("consumer.stopped")
@@ -74,4 +119,4 @@ def run() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(run())
+    raise SystemExit(run())
