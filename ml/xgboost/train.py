@@ -62,10 +62,10 @@ def train(
 
     # Feature importance (gain)
     importances = clf.feature_importances_
-    from backend.features.session_extractor import BEHAVIORAL_FEATURE_NAMES
+    from backend.features.transaction_extractor import TRANSACTION_FEATURE_NAMES
 
     feat_imp = sorted(
-        zip(BEHAVIORAL_FEATURE_NAMES, importances, strict=False),
+        zip(TRANSACTION_FEATURE_NAMES, importances, strict=False),
         key=lambda x: x[1],
         reverse=True,
     )

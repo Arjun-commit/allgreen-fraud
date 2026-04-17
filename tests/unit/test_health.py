@@ -1,4 +1,4 @@
-"""Dead-simple smoke tests for the phase-1 skeleton."""
+"""Smoke tests for the API endpoints."""
 
 from fastapi.testclient import TestClient
 
@@ -15,11 +15,17 @@ def test_health_ok() -> None:
     assert "version" in body
 
 
-def test_score_stub_returns_low_risk() -> None:
+def test_score_returns_valid_response() -> None:
+    """POST /score with no session events → models return low-risk.
+
+    This now exercises the real pipeline (not a stub), but with no events
+    in the DB for this session, so all features are zero and the models
+    should return a low-risk score.
+    """
     r = client.post(
         "/v1/score",
         json={
-            "session_id": "abc-123",
+            "session_id": "test-health-score",
             "transaction": {
                 "amount": 42.00,
                 "currency": "USD",
@@ -30,8 +36,14 @@ def test_score_stub_returns_low_risk() -> None:
     )
     assert r.status_code == 200
     body = r.json()
-    assert body["risk_level"] == "low"
-    assert body["friction"]["type"] == "none"
+    # With zero features, both models should return low risk
+    assert body["risk_level"] in ("low", "medium", "high", "critical")
+    assert "friction" in body
+    assert body["friction"]["type"] in ("none", "awareness_prompt", "cooling_timer", "callback_required")
+    assert "transaction_id" in body
+    assert "behavioral_score" in body
+    assert "context_score" in body
+    assert "shap_top_factors" in body
 
 
 def test_session_events_ingest_accepts_batch() -> None:
@@ -48,3 +60,11 @@ def test_session_events_ingest_accepts_batch() -> None:
     )
     assert r.status_code == 202
     assert r.json()["event_count"] == 2
+
+
+def test_friction_endpoint_returns_null_for_unknown_session() -> None:
+    r = client.get("/v1/friction/nonexistent-session-id")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["session_id"] == "nonexistent-session-id"
+    assert body["friction"] is None

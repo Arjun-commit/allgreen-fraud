@@ -184,14 +184,80 @@ def build_xgboost_dataset(
     n_fraud: int = 100,
     seed: int = 42,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Build (X, y) for XGBoost by aggregating session features across time.
+    """Build (X, y) for XGBoost using transaction-context features (16-dim).
 
-    For XGBoost we collapse the time dimension by taking the mean of each
-    feature across all windows. This isn't ideal — a real deployment would
-    use the full transaction feature set — but it's enough to validate the
-    pipeline end to end.
+    Generates realistic-ish transaction context: normal sessions get
+    normal amounts to known payees; fraud sessions get larger amounts
+    to new payees with elevated behavioral scores.
     """
-    X_seq, y = build_training_dataset(n_normal, n_fraud, seed=seed)
-    # Mean across the time axis (axis=1) → (n_samples, n_features)
-    X_flat = X_seq.mean(axis=1)
-    return X_flat, y
+    from backend.features.transaction_extractor import (
+        TRANSACTION_FEATURE_NAMES,
+        SessionContext,
+        UserHistory,
+        extract_transaction_features,
+    )
+
+    rng = random.Random(seed)
+    n_features = len(TRANSACTION_FEATURE_NAMES)
+    total = n_normal + n_fraud
+    X = np.zeros((total, n_features), dtype=np.float32)
+    y = np.zeros(total, dtype=np.float32)
+
+    for i in range(n_normal):
+        # Normal: reasonable amount, known payee, low behavioral score
+        tx = {
+            "amount": rng.uniform(50, 2000),
+            "transfer_type": rng.choice(["domestic", "domestic", "domestic", "international"]),
+            "is_new_payee": rng.random() < 0.1,
+        }
+        history = UserHistory(
+            avg_transfer_amount_90d=rng.uniform(200, 1500),
+            avg_transfer_amount_30d=rng.uniform(200, 1500),
+            large_transfers_30d_count=rng.randint(0, 3),
+            international_transfers_90d=rng.randint(0, 2),
+            days_since_last_large_transfer=rng.randint(1, 60),
+            payee_age_days=rng.randint(30, 1000),
+            payee_fraud_network_score=rng.uniform(0, 0.05),
+            payee_is_mule_candidate=False,
+            shared_payee_with_flagged_users=0,
+        )
+        ctx = SessionContext(
+            behavioral_risk_score=rng.uniform(0, 0.2),
+            session_duration_at_tx_ms=rng.randint(10_000, 120_000),
+            confirmation_page_dwell_ms=rng.randint(2000, 15_000),
+        )
+        feats = extract_transaction_features(tx, history, ctx)
+        for f_idx, fname in enumerate(TRANSACTION_FEATURE_NAMES):
+            X[i, f_idx] = feats[fname]
+        y[i] = 0.0
+
+    for j in range(n_fraud):
+        i = n_normal + j
+        # Fraud: larger round amounts, new payees, high behavioral score
+        tx = {
+            "amount": rng.choice([3000, 5000, 8000, 10000, 15000.0]),
+            "transfer_type": rng.choice(["domestic", "international", "crypto"]),
+            "is_new_payee": True,
+        }
+        history = UserHistory(
+            avg_transfer_amount_90d=rng.uniform(200, 800),
+            avg_transfer_amount_30d=rng.uniform(200, 600),
+            large_transfers_30d_count=rng.randint(0, 1),
+            international_transfers_90d=rng.randint(0, 1),
+            days_since_last_large_transfer=rng.randint(30, 200),
+            payee_age_days=0,
+            payee_fraud_network_score=rng.uniform(0.3, 0.9),
+            payee_is_mule_candidate=rng.random() < 0.4,
+            shared_payee_with_flagged_users=rng.randint(1, 5),
+        )
+        ctx = SessionContext(
+            behavioral_risk_score=rng.uniform(0.5, 1.0),
+            session_duration_at_tx_ms=rng.randint(60_000, 300_000),
+            confirmation_page_dwell_ms=rng.randint(500, 3000),
+        )
+        feats = extract_transaction_features(tx, history, ctx)
+        for f_idx, fname in enumerate(TRANSACTION_FEATURE_NAMES):
+            X[i, f_idx] = feats[fname]
+        y[i] = 1.0
+
+    return X, y

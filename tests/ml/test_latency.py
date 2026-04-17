@@ -39,7 +39,7 @@ def test_lstm_inference_latency() -> None:
 
 def test_xgboost_inference_latency() -> None:
     """XGBoost inference (with SHAP) should be well under 100ms."""
-    vec = np.random.randn(18).astype(np.float32)
+    vec = np.random.randn(16).astype(np.float32)  # 16 transaction features now
 
     # Warm up
     score_transaction(vec)

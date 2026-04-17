@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from sklearn.metrics import roc_auc_score
 
-from backend.features.session_extractor import BEHAVIORAL_FEATURE_NAMES
+from backend.features.transaction_extractor import TRANSACTION_FEATURE_NAMES
 from backend.models.xgboost_inference import score_transaction
 from tests.data_generator import build_xgboost_dataset
 
@@ -20,7 +20,7 @@ def holdout_data():
 @pytest.fixture(scope="module")
 def holdout_scores(holdout_data):
     X, y = holdout_data
-    names = list(BEHAVIORAL_FEATURE_NAMES)
+    names = list(TRANSACTION_FEATURE_NAMES)
     probs = []
     all_shap = []
     for i in range(len(y)):
