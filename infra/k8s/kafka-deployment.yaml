@@ -1,0 +1,84 @@
+# Kafka in KRaft mode (no Zookeeper). For prod, use a managed service
+# (Confluent Cloud, AWS MSK, etc.) instead of self-hosted.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  labels:
+    app: allgreen-fraud
+    component: kafka
+spec:
+  serviceName: kafka-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: allgreen-fraud
+      component: kafka
+  template:
+    metadata:
+      labels:
+        app: allgreen-fraud
+        component: kafka
+    spec:
+      containers:
+        - name: kafka
+          image: confluentinc/cp-kafka:7.6.0
+          ports:
+            - containerPort: 9092
+              name: broker
+            - containerPort: 9093
+              name: controller
+          env:
+            - name: KAFKA_NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: KAFKA_PROCESS_ROLES
+              value: "broker,controller"
+            - name: KAFKA_LISTENERS
+              value: "PLAINTEXT://:9092,CONTROLLER://:9093"
+            - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+              value: "kafka-0:9093,kafka-1:9093,kafka-2:9093"
+            - name: KAFKA_LOG_RETENTION_HOURS
+              value: "168"  # 7 days
+            - name: KAFKA_NUM_PARTITIONS
+              value: "8"
+            - name: CLUSTER_ID
+              value: "allgreen-fraud-kafka-cluster"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          volumeMounts:
+            - name: kafka-data
+              mountPath: /var/lib/kafka/data
+  volumeClaimTemplates:
+    - metadata:
+        name: kafka-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 50Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-headless
+  labels:
+    app: allgreen-fraud
+    component: kafka
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - port: 9092
+      name: broker
+    - port: 9093
+      name: controller
+  selector:
+    app: allgreen-fraud
+    component: kafka

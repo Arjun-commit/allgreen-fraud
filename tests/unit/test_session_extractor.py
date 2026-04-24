@@ -1,8 +1,4 @@
-"""Unit tests for backend.features.session_extractor.
-
-Approach: a mix of hand-crafted fixtures (so we can pin exact values) and
-the synthetic generator (so we exercise the full feature dict end to end).
-"""
+"""Tests for backend.features.session_extractor."""
 
 from __future__ import annotations
 
@@ -14,7 +10,6 @@ from backend.features.session_extractor import (
 )
 from tests.data_generator import generate_coached_session, generate_normal_session
 
-# ---------- shape / coverage ----------
 
 def test_output_has_every_declared_feature() -> None:
     feats = extract_session_features([])
@@ -26,7 +21,6 @@ def test_empty_session_returns_zeros() -> None:
     assert all(v == 0.0 for v in feats.values())
 
 
-# ---------- hand-crafted fixtures ----------
 
 def _mousemove(ts: int, x: int, y: int) -> dict:
     return {"type": "mousemove", "ts_ms": ts, "x": x, "y": y}
@@ -100,7 +94,6 @@ def test_session_duration() -> None:
     assert feats["session_duration_ms"] == 5000.0
 
 
-# ---------- context pass-through ----------
 
 def test_context_values_flow_through() -> None:
     ctx = {
@@ -120,7 +113,6 @@ def test_context_values_flow_through() -> None:
     assert feats["form_revisit_count"] == 3.0
 
 
-# ---------- end-to-end sanity via synthetic generator ----------
 
 def test_coached_vs_normal_shows_distinct_signals() -> None:
     """Not a model test — just verifies the extractor separates the

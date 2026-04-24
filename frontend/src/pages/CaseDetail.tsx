@@ -1,14 +1,4 @@
-/**
- * Case Detail — per-session drill-down page.
- *
- * Blueprint spec:
- *  - Risk score breakdown (behavioral vs context gauges)
- *  - Session timeline
- *  - Top SHAP factors bar chart
- *  - Transaction details
- *  - Friction log
- *  - Analyst action buttons
- */
+// Per-session drill-down: risk gauges, SHAP factors, timeline, and analyst actions.
 
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";

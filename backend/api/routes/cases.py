@@ -1,13 +1,6 @@
 """Case management endpoints for the analyst dashboard.
 
-Phase 5: real implementation backed by Postgres when available,
-with an in-memory fallback for dev/demo mode.
-
-Endpoints:
-  GET  /cases                     - paginated list of flagged transactions
-  GET  /cases/{case_id}           - single case detail
-  POST /cases/{case_id}/resolve   - analyst resolves a case
-  GET  /analytics/model-performance - model metrics for dashboard charts
+Backed by Postgres when available, with an in-memory fallback for dev/demo.
 """
 
 from __future__ import annotations
@@ -24,9 +17,6 @@ log = structlog.get_logger()
 router = APIRouter()
 
 
-# ---------------------------------------------------------------------------
-#  Request / response models
-# ---------------------------------------------------------------------------
 
 class CaseResolveRequest(BaseModel):
     outcome: Literal["confirmed_fraud", "legitimate", "escalated"]
@@ -65,9 +55,7 @@ class CaseDetail(CaseSummary):
     resolved_at: str | None = None
 
 
-# ---------------------------------------------------------------------------
-#  In-memory case store (demo/dev fallback when Postgres isn't available)
-# ---------------------------------------------------------------------------
+# In-memory case store (dev/demo fallback)
 
 _demo_cases: dict[str, dict] = {}
 
@@ -190,10 +178,6 @@ def _score_to_level(score: float) -> str:
     return "critical"
 
 
-# ---------------------------------------------------------------------------
-#  Endpoints
-# ---------------------------------------------------------------------------
-
 @router.get("/cases")
 async def list_cases(
     status: str | None = Query(default=None),
@@ -285,17 +269,12 @@ async def resolve_case(case_id: str, body: CaseResolveRequest) -> dict[str, str]
     return {"case_id": case_id, "status": "resolved", "outcome": body.outcome}
 
 
-# ---------------------------------------------------------------------------
-#  Analytics
-# ---------------------------------------------------------------------------
-
 @router.get("/analytics/model-performance")
 async def model_performance() -> dict[str, Any]:
     """Model metrics for the analytics dashboard.
 
-    Phase 5: returns metrics from the latest training run + case outcomes.
-    In prod this would pull from MLflow; for now we read from the metrics
-    files saved during training and compute friction stats from cases.
+    Reads from training artifact files and computes friction stats from cases.
+    In prod this would pull from MLflow instead.
     """
     import json
     import os

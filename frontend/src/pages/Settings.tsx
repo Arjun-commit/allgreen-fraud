@@ -1,12 +1,4 @@
-/**
- * Threshold Settings page.
- *
- * Blueprint spec:
- *  - Editable threshold sliders (Medium/High/Critical)
- *  - Live preview: "N transactions last week would have been affected"
- *  - Friction type config per threshold level
- *  - Save requires 2-person approval (maker-checker) — stubbed for now
- */
+// Threshold settings with live impact preview and maker-checker save flow.
 
 import { useState, useEffect } from "react";
 import { Save, AlertTriangle, Lock } from "lucide-react";

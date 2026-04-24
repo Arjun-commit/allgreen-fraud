@@ -1,7 +1,4 @@
-"""Tests for the analyst case management API endpoints.
-
-These hit the demo-data fallback since we don't spin up Postgres in unit tests.
-"""
+"""Tests for the case management API (uses demo-data fallback)."""
 
 from __future__ import annotations
 
@@ -12,7 +9,6 @@ from backend.main import app
 client = TestClient(app)
 
 
-# ---------- GET /cases ----------
 
 def test_list_cases_returns_items() -> None:
     r = client.get("/v1/cases")
@@ -62,7 +58,6 @@ def test_list_cases_item_shape() -> None:
         assert field in item, f"Missing field: {field}"
 
 
-# ---------- GET /cases/{case_id} ----------
 
 def test_get_case_detail() -> None:
     # First get a case_id from the list
@@ -85,7 +80,6 @@ def test_get_case_not_found() -> None:
     assert r.status_code == 404
 
 
-# ---------- POST /cases/{case_id}/resolve ----------
 
 def test_resolve_case_confirmed_fraud() -> None:
     r = client.get("/v1/cases", params={"limit": 1})
@@ -125,7 +119,6 @@ def test_resolve_case_invalid_outcome() -> None:
     assert r2.status_code == 422  # validation error
 
 
-# ---------- GET /analytics/model-performance ----------
 
 def test_model_performance_endpoint() -> None:
     r = client.get("/v1/analytics/model-performance")
@@ -146,7 +139,6 @@ def test_model_performance_has_friction_stats() -> None:
     assert "hard_block_scam_confirmation_rate" in fe
 
 
-# ---------- GET /analytics/score-distribution ----------
 
 def test_score_distribution_endpoint() -> None:
     r = client.get("/v1/analytics/score-distribution")

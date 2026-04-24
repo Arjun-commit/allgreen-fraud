@@ -1,7 +1,6 @@
-"""SQLAlchemy ORM models — mirrors the schema in the blueprint (§4).
+"""SQLAlchemy ORM models.
 
-Naming kept verbose because this touches money + compliance; we'd rather
-read `is_new_payee` in log output than `inp`.
+Verbose column names on purpose -- this touches money and compliance.
 """
 
 from __future__ import annotations
@@ -31,7 +30,6 @@ class Base(DeclarativeBase):
     pass
 
 
-# ---------- users ----------
 
 class User(Base):
     __tablename__ = "users"
@@ -50,7 +48,6 @@ class User(Base):
     sessions: Mapped[list[Session]] = relationship(back_populates="user")
 
 
-# ---------- sessions ----------
 
 class Session(Base):
     __tablename__ = "sessions"
@@ -86,9 +83,7 @@ class Session(Base):
     )
 
 
-# ---------- session_events ----------
-# Note: class name is SessionEventRow (not SessionEvent) so it doesn't collide
-# with the pydantic wire type in backend/api/routes/events.py.
+# Named SessionEventRow to avoid collision with the pydantic type in events.py
 
 class SessionEventRow(Base):
     __tablename__ = "session_events"
@@ -106,7 +101,6 @@ class SessionEventRow(Base):
     )
 
 
-# ---------- transactions ----------
 
 class Transaction(Base):
     __tablename__ = "transactions"
@@ -149,7 +143,6 @@ class Transaction(Base):
     )
 
 
-# ---------- friction_events ----------
 
 class FrictionEvent(Base):
     __tablename__ = "friction_events"
@@ -167,7 +160,6 @@ class FrictionEvent(Base):
     )
 
 
-# ---------- analyst_cases ----------
 
 class AnalystCase(Base):
     __tablename__ = "analyst_cases"
@@ -190,5 +182,32 @@ class AnalystCase(Base):
         CheckConstraint(
             "status IN ('open','investigating','closed_fraud','closed_legit')",
             name="ck_analyst_cases_status",
+        ),
+    )
+
+
+
+class PendingChange(Base):
+    __tablename__ = "pending_changes"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    change_type: Mapped[str] = mapped_column(String(32))  # 'thresholds', etc.
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    requested_by: Mapped[str] = mapped_column(String(64))
+    approved_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('pending','approved','rejected')",
+            name="ck_pending_changes_status",
         ),
     )

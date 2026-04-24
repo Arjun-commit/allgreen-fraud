@@ -1,19 +1,7 @@
 """Redis-backed session feature store + friction cache.
 
-Two data patterns:
-
-1. Session features (TTL=4h): keyed `session:{session_id}:features`.
-   Written by the feature extractor after computing behavioral features.
-   Read by the /score endpoint on the hot path.
-
-2. Friction state (TTL=1h): keyed `session:{session_id}:friction`.
-   Written by the scoring pipeline after a friction decision.
-   Read by the GET /friction/{session_id} polling endpoint.
-
-Design:
-  - Dependency-injectable: tests inject a FakeRedis or None.
-  - Graceful fallback: if Redis is down, scoring still works — it just
-    recomputes features from Postgres instead of the cache. Slower but correct.
+Graceful fallback: if Redis is down, scoring recomputes from Postgres.
+Tests inject a FakeRedis or None.
 """
 
 from __future__ import annotations
@@ -63,7 +51,6 @@ def get_redis() -> RedisLike | None:
     return _client
 
 
-# ---------- Session features ----------
 
 def _features_key(session_id: str) -> str:
     return f"session:{session_id}:features"
@@ -92,7 +79,6 @@ def get_cached_features(session_id: str) -> dict[str, float] | None:
         return None
 
 
-# ---------- Friction state ----------
 
 def _friction_key(session_id: str) -> str:
     return f"session:{session_id}:friction"

@@ -1,6 +1,4 @@
-/**
- * Color-coded risk level badge. Used everywhere.
- */
+// Color-coded risk level badge.
 
 const COLORS: Record<string, string> = {
   low: "bg-green-100 text-green-800",

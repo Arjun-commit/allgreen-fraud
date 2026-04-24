@@ -1,15 +1,4 @@
-"""Model fairness checks.
-
-Blueprint §12: "Ensure false positive rate is equal across age groups and
-geographic regions."
-
-Phase 3 reality check: our synthetic data doesn't have demographic attributes,
-so we can't do real fairness testing yet. What we *can* do is verify that the
-models don't produce wildly different FPR across random subsets of the normal
-population — which is a proxy for "no group is systematically disadvantaged by
-feature noise." Real fairness testing with protected attributes happens in
-phase 6 when we get labeled data from the bank.
-"""
+"""Model fairness checks — FPR consistency across population subsets."""
 
 from __future__ import annotations
 

@@ -1,0 +1,126 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: allgreen-backend
+  labels:
+    app: allgreen-fraud
+    component: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: allgreen-fraud
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: allgreen-fraud
+        component: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: backend
+          image: allgreen-fraud/backend:latest
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: API_ENV
+              value: "prod"
+            - name: API_PORT
+              value: "8000"
+            - name: POSTGRES_URL
+              valueFrom:
+                secretKeyRef:
+                  name: allgreen-secrets
+                  key: postgres-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: allgreen-secrets
+                  key: redis-url
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka-headless:9092"
+            - name: API_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: allgreen-secrets
+                  key: api-secret-key
+            - name: LSTM_MODEL_PATH
+              value: "/app/ml/lstm/artifacts/model.pt"
+            - name: XGBOOST_MODEL_PATH
+              value: "/app/ml/xgboost/artifacts/model.json"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          volumeMounts:
+            - name: model-artifacts
+              mountPath: /app/ml
+              readOnly: true
+      volumes:
+        - name: model-artifacts
+          persistentVolumeClaim:
+            claimName: allgreen-model-artifacts
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: allgreen-backend
+  labels:
+    app: allgreen-fraud
+    component: backend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8000
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: allgreen-fraud
+    component: backend
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: allgreen-backend-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: allgreen-backend
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Pods
+      pods:
+        metric:
+          name: allgreen_http_request_duration_seconds
+        target:
+          type: AverageValue
+          averageValue: "100m"  # scale up when p50 latency hits 100ms

@@ -1,9 +1,4 @@
-/**
- * Backend API client.
- *
- * In dev, Vite proxies /v1/* to localhost:8000 (see vite.config.ts).
- * In prod, the same origin serves both frontend and API.
- */
+// API client. Dev uses Vite proxy; prod serves from same origin.
 
 const BASE = "/v1";
 

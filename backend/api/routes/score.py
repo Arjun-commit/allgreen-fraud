@@ -27,7 +27,7 @@ log = structlog.get_logger()
 router = APIRouter()
 
 
-# ---------- Request / Response schemas (unchanged from phase 1 contract) ----------
+# Request / response schemas
 
 class ScoreTxInput(BaseModel):
     amount: float
@@ -65,17 +65,12 @@ class ScoreResponse(BaseModel):
     shap_top_factors: list[ShapFactor]
 
 
-# ---------- Event loading ----------
 
 def _load_session_events(session_id: str) -> list[dict]:
-    """Load raw session events for scoring.
+    """Load raw session events from the DB for scoring.
 
-    Phase 4: we pull from the session_events table via SQLAlchemy.
-    In a future optimization pass we'd check the Redis feature cache first
-    and skip the raw-event load entirely if features are already computed.
-
-    For now, if we can't find events, we return an empty list — the pipeline
-    handles that gracefully (all features → 0, models return low-risk).
+    Returns an empty list if the session isn't found or the DB is down --
+    the pipeline handles that gracefully (features zero out, low-risk).
     """
     try:
         from backend.db.models import Session as SessionRow
@@ -113,14 +108,12 @@ def _load_session_events(session_id: str) -> list[dict]:
 def _load_user_history(session_id: str) -> UserHistory:
     """Load 90-day aggregates for the user behind this session.
 
-    TODO(phase-4.5): real implementation that queries transactions table.
-    For now returns defaults — the XGBoost will rely more on the
-    behavioral_risk_score cross-feature until we wire this up.
+    TODO: query the transactions table for real history. Returns defaults
+    for now -- XGBoost leans on behavioral_risk_score until this is wired up.
     """
     return UserHistory()
 
 
-# ---------- Route ----------
 
 @router.post("/score", response_model=ScoreResponse)
 async def score_transaction(req: ScoreRequest) -> ScoreResponse:

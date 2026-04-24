@@ -1,11 +1,4 @@
-/**
- * Live Alert Feed — main dashboard page.
- *
- * Blueprint spec:
- *  - Top row: 4 metric cards (Active Sessions, Flagged Today, Friction Applied, Confirmed Fraud)
- *  - Main: real-time table of flagged transactions, auto-refreshes every 10s
- *  - Clickable rows → CaseDetail
- */
+// Live Alert Feed — metric cards + auto-refreshing flagged transactions table.
 
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";

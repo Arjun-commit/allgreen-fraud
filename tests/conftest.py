@@ -1,8 +1,4 @@
-"""Shared test fixtures.
-
-Installs fakes for Kafka and Redis so unit tests don't need running
-infrastructure.
-"""
+"""Shared test fixtures — fake Kafka and Redis for all tests."""
 
 from __future__ import annotations
 
@@ -14,7 +10,6 @@ import pytest
 from backend.kafka import producer as kafka_producer
 from backend.store import redis_store
 
-# ---------- Fake Kafka ----------
 
 @dataclass
 class FakeProducer:
@@ -41,7 +36,6 @@ def fake_kafka():
     kafka_producer.set_producer(None)
 
 
-# ---------- Fake Redis ----------
 
 class FakeRedis:
     """In-memory dict that quacks like redis.Redis. Good enough for tests."""

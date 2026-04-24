@@ -1,16 +1,4 @@
-"""Locust load test for the scoring API.
-
-Usage:
-    pip install locust
-    locust -f tests/load/locustfile.py --host http://localhost:8000
-
-Blueprint target: 500 req/sec at < 100ms p99.
-
-This simulates:
-  1. Session event ingestion (high volume, 5s batches)
-  2. Score requests (lower volume, one per transfer)
-  3. Friction polling (medium volume, every few seconds during a transfer)
-"""
+"""Locust load test for the scoring API."""
 
 from __future__ import annotations
 

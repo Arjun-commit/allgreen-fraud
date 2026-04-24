@@ -1,23 +1,6 @@
-"""The full scoring pipeline. This is the brains of the operation.
+"""Scoring pipeline: features -> LSTM -> XGBoost -> ensemble -> friction.
 
-Called by POST /score when a user initiates a transfer.
-
-Flow:
-  1. Load session events (from Redis cache or Postgres fallback)
-  2. Extract behavioral features → 18-dim vector per 10s window
-  3. Run LSTM → behavioral anomaly score [0,1]
-  4. Extract transaction features (needs user history from DB)
-  5. Run XGBoost → fraud probability + SHAP factors
-  6. Ensemble → final risk score [0-100] + risk level
-  7. Friction decision based on risk level
-  8. Persist transaction + friction event to Postgres
-  9. Publish scores.final + friction.decisions to Kafka
- 10. Cache friction in Redis for the polling endpoint
- 11. Return everything to the caller
-
-Latency budget: < 100ms total (blueprint target). The expensive parts are
-the model forward passes (~3ms each) and the DB writes (~10ms). Feature
-extraction from cached events is ~1ms. We're comfortably under budget.
+Called by POST /score on every transfer attempt. Latency budget is <100ms.
 """
 
 from __future__ import annotations
@@ -78,17 +61,12 @@ def run_pipeline(inp: ScoringInput) -> ScoringResult:
     t0 = time.perf_counter()
     tx_id = str(uuid.uuid4())
 
-    # 1. Behavioral features
     session_features = extract_session_features(inp.session_events, inp.event_context)
     cache_session_features(inp.session_id, session_features)
 
-    # 2. Build windowed sequence for LSTM (30 windows of 10s each)
     feature_sequence = _build_lstm_input(inp.session_events, inp.event_context)
-
-    # 3. LSTM score
     behavioral_z = lstm_score(feature_sequence)
 
-    # 4. Transaction features (XGBoost input)
     session_ctx = SessionContext(
         behavioral_risk_score=behavioral_z,
         session_duration_at_tx_ms=int(session_features.get("session_duration_ms", 0)),
@@ -103,18 +81,13 @@ def run_pipeline(inp: ScoringInput) -> ScoringResult:
         [tx_features[name] for name in TRANSACTION_FEATURE_NAMES], dtype=np.float32
     )
 
-    # 5. XGBoost score + SHAP
     context_prob, shap_factors = xgb_score(
         tx_vector, list(TRANSACTION_FEATURE_NAMES)
     )
 
-    # 6. Ensemble
     risk = aggregate_risk(behavioral_z, context_prob)
-
-    # 7. Friction decision
     friction = friction_decide(risk["final_score"])
 
-    # 8. Cache friction for the polling endpoint
     cache_friction(
         inp.session_id,
         {

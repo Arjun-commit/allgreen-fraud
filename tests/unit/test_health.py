@@ -1,4 +1,4 @@
-"""Smoke tests for the API endpoints."""
+"""Smoke tests for API endpoints."""
 
 from fastapi.testclient import TestClient
 

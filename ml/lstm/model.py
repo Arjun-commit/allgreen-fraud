@@ -1,13 +1,10 @@
 """BehaviorLSTM — per-user behavioral anomaly detector.
 
-Architecture from blueprint §7.1:
-  - 2-layer LSTM, hidden=64, dropout=0.2
-  - Attention over timesteps (learned weights, softmax)
-  - FC head → sigmoid → anomaly score [0,1]
+2-layer LSTM (hidden=64, dropout=0.2) with learned attention over
+timesteps, followed by an FC head producing an anomaly score in [0,1].
 
-The attention lets the model focus on the suspicious windows (e.g. the
-moment the customer hits the confirmation page while coached) rather than
-averaging all 30 windows equally. Simple but effective.
+Attention lets the model focus on suspicious windows rather than
+averaging all timesteps equally.
 
 Input shape:  (batch, seq_len=30, features=18)
 Output shape: (batch, 1)

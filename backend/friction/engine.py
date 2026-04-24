@@ -1,8 +1,4 @@
-"""Risk score → intervention mapping.
-
-Phase 1: thresholds + lookup only. Phase 4 wires this into the /score path
-and publishes `friction.decisions` events.
-"""
+"""Risk score to intervention mapping (thresholds + lookup)."""
 
 from typing import Literal, TypedDict
 
@@ -16,9 +12,7 @@ class FrictionDecision(TypedDict):
     payload: dict | None
 
 
-# Thresholds live here so tests and docs have one place to look.
-# The exact boundaries come from blueprint §9 and will be tunable from the
-# Settings page (maker-checker flow, phase 6).
+# Tunable from the Settings page (maker-checker flow).
 THRESHOLDS = {
     "medium": 45.0,
     "high": 65.0,

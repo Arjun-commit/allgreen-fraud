@@ -4,8 +4,8 @@ Run once after the kafka broker is up:
 
     python scripts/create_kafka_topics.py
 
-Idempotent — existing topics are skipped. 8 partitions per topic as per
-the blueprint; RF=1 in dev (bumped in prod via terraform).
+Idempotent — existing topics are skipped. 8 partitions per topic;
+RF=1 in dev (bumped in prod via terraform).
 """
 
 from __future__ import annotations

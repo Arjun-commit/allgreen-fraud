@@ -1,11 +1,4 @@
-"""Synthetic event + feature-vector generator.
-
-Two audiences:
-  - tests/unit: quick, small fixtures via generate_normal_session/generate_coached_session
-  - ml/: training-ready datasets via build_training_dataset
-
-The generation is deterministic per seed so experiments are reproducible.
-"""
+"""Synthetic event and feature-vector generator for tests."""
 
 from __future__ import annotations
 
@@ -19,9 +12,6 @@ from backend.features.session_extractor import (
     extract_session_features,
 )
 
-# ------------------------------------------------------------------ #
-#  Raw event generators (unchanged from phase 2)                      #
-# ------------------------------------------------------------------ #
 
 def generate_normal_session(
     session_id: str = "sess-normal",
@@ -106,9 +96,6 @@ def make_session_batch(
     return {"session_id": session_id, "user_id": user_id, "events": events}
 
 
-# ------------------------------------------------------------------ #
-#  Feature-vector dataset builder (phase 3)                           #
-# ------------------------------------------------------------------ #
 
 def _session_to_windowed_features(
     events: list[dict],
@@ -117,8 +104,8 @@ def _session_to_windowed_features(
 ) -> list[dict[str, float]]:
     """Chop a session into time windows and compute features per window.
 
-    The LSTM sees a sequence of these. max_windows=30 → 5 minutes of
-    session at 10s windows, matching the blueprint spec.
+    The LSTM sees a sequence of these. max_windows=30 covers ~5 minutes
+    of session at 10s windows.
     """
     if not events:
         return [extract_session_features([])] * max_windows

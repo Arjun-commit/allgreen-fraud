@@ -1,8 +1,7 @@
 """Aggregate LSTM + XGBoost scores into a single risk level.
 
-The ensemble weighting comes from blueprint §7.3. Behavioral gets more
-weight because it's our unique signal — the XGBoost context model is
-largely overlap with what the existing tools already flag.
+Behavioral gets more weight because it's our unique signal -- the
+XGBoost context model overlaps with what existing tools already flag.
 """
 
 from typing import Literal, TypedDict

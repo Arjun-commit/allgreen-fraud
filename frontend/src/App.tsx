@@ -40,7 +40,7 @@ export default function App() {
           ))}
         </nav>
         <div className="p-4 text-xs text-gray-500 border-t border-gray-700">
-          v0.1.0 — Phase 5
+          v0.1.0
         </div>
       </aside>
 

@@ -1,8 +1,4 @@
-/**
- * Semi-circular gauge for risk scores. Used in case detail.
- *
- * Simple SVG arc — no external charting lib needed.
- */
+// SVG semicircular gauge for risk scores.
 
 interface RiskGaugeProps {
   label: string;

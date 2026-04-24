@@ -103,11 +103,10 @@ def _mouse_stats(mousemoves: list[dict]) -> _MouseStats:
 
 
 def _click_dwell_stats(clicks: list[dict]) -> tuple[float, float]:
-    """Click dwell (mousedown→mouseup duration) if the SDK captured it.
+    """Click dwell (mousedown->mouseup duration) if the SDK captured it.
 
-    The current SDK doesn't emit click dwell yet — we'll add that in phase 2.5
-    when we update the SDK to track mousedown/mouseup pairs. Until then this
-    returns zeros, which is a legitimate "no signal" value.
+    The SDK doesn't emit click dwell yet -- returns zeros until we add
+    mousedown/mouseup pair tracking.
     """
     dwells = [c["dwell_ms"] for c in clicks if c.get("dwell_ms") is not None]
     return _mean(dwells), _stddev(dwells)
@@ -135,9 +134,8 @@ def _backspace_ratio(keydowns: list[dict]) -> float:
 def _copy_paste_detected(keydowns: list[dict]) -> bool:
     """Heuristic: >=3 keystrokes in <50ms total is almost certainly a paste.
 
-    The SDK doesn't capture clipboard events yet (security-sensitive API);
-    this is a proxy and it's fine for now. TODO(phase-2.5): add explicit
-    paste detection via the `paste` event.
+    TODO: add explicit paste detection via the `paste` event once the SDK
+    supports clipboard events.
     """
     if len(keydowns) < 3:
         return False

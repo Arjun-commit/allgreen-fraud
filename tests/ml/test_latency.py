@@ -1,10 +1,4 @@
-"""Latency validation.
-
-Blueprint target: full scoring pipeline < 100ms p99.
-We test the individual model inference calls here. The full pipeline
-latency test (API → features → LSTM → XGBoost → ensemble → response)
-lives in tests/integration/ and requires the docker stack.
-"""
+"""Latency validation for individual model inference calls."""
 
 from __future__ import annotations
 
@@ -19,7 +13,7 @@ N_ITERATIONS = 100
 
 
 def test_lstm_inference_latency() -> None:
-    """LSTM inference should be < 20ms p99 (blueprint §7.1)."""
+    """LSTM inference should be < 20ms p99."""
     seq = np.random.randn(30, 18).astype(np.float32)
 
     # Warm up (first call loads the model)

@@ -1,6 +1,4 @@
-/**
- * Dashboard metric card — top row of the alert feed.
- */
+// Metric card for the dashboard top row.
 
 import type { ReactNode } from "react";
 

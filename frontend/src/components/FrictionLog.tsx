@@ -1,6 +1,4 @@
-/**
- * Shows what friction was applied to a session and how the user responded.
- */
+// Displays applied friction type and user response.
 
 import { AlertTriangle, Clock, Phone, CheckCircle } from "lucide-react";
 

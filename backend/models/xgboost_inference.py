@@ -1,15 +1,7 @@
-"""XGBoost inference wrapper.
+"""XGBoost inference wrapper. Load once, serve forever.
 
-Same pattern as the LSTM wrapper: load once, serve forever.
-
-Usage:
-    from backend.models.xgboost_inference import score_transaction
-    prob, shap_factors = score_transaction(feature_vector)
-
-Note: we use XGBoost's native `pred_contribs=True` for feature contributions
-instead of the shap library, because shap.TreeExplainer has a known
-compatibility bug with recent XGBoost versions (base_score format issue).
-The native contribs are mathematically equivalent and faster anyway.
+Uses XGBoost's native pred_contribs instead of the shap library -- avoids
+a known compat bug with recent XGBoost versions and is faster anyway.
 """
 
 from __future__ import annotations

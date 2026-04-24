@@ -1,10 +1,8 @@
 """POST /events/session and POST /events/transaction.
 
-Phase 2: validates shape, publishes to Kafka, returns 202.
-
-We intentionally do NOT write to Postgres here — the consumer does that.
-Keeping the ingest endpoint dumb-and-fast lets us absorb bursts without
-blocking the bank's frontend when the DB is under pressure.
+Validates shape, publishes to Kafka, returns 202. We don't write to
+Postgres here -- the consumer handles that so we can absorb bursts
+without blocking the bank's frontend.
 """
 
 from typing import Any, Literal
@@ -57,9 +55,7 @@ async def ingest_session_events(batch: SessionEventBatch) -> dict[str, Any]:
             key=batch.session_id,  # key by session so all of one session's events land on one partition
         )
     except Exception:  # noqa: BLE001
-        # Never bubble a Kafka failure back to the bank frontend — we'd rather
-        # lose a batch of mouse events than fail the user's session. Alerting
-        # on broker down lives in Grafana (phase 6).
+        # Better to lose a batch of mouse events than fail the user's session.
         log.exception(
             "events.session.publish_failed",
             session_id=batch.session_id,

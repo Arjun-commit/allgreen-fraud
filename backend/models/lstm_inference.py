@@ -1,11 +1,6 @@
-"""LSTM inference wrapper for the scoring hot path.
+"""LSTM inference wrapper. Loads the model once and keeps it in memory.
 
-Loads the model once at import / first call and keeps it in memory.
-Thread-safe: torch forward passes are read-only on the weights.
-
-Usage:
-    from backend.models.lstm_inference import score_session
-    anomaly = score_session(feature_sequence)   # float [0, 1]
+Thread-safe since torch forward passes are read-only on the weights.
 """
 
 from __future__ import annotations

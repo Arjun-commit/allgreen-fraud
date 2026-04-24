@@ -1,9 +1,8 @@
 """Shared normalization utils used in training + inference.
 
-For phase 3 we keep it dead simple — z-score normalization per feature
-using running stats computed during training. A more robust approach
-(quantile normalization, log transforms on the heavy-tailed features)
-comes once we have real data distributions to look at.
+Z-score normalization per feature using running stats computed during
+training. A more robust approach (quantile normalization, log transforms
+on heavy-tailed features) comes once we have real data distributions.
 """
 
 from __future__ import annotations

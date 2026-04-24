@@ -1,17 +1,17 @@
 # All-Green Fraud Detection
 
-Behavioral fraud detection for social-engineering ("all-green") attacks — the kind where
+Behavioral fraud detection for social-engineering ("all-green") attacks the kind where
 the transaction *looks* perfectly legitimate on paper because the real customer is on
 their own device, passed 2FA, and is being coached by a scammer on the phone.
 
 We don't try to catch this in the transaction data alone (that's what the existing
 tools already do, and they lose). We catch it by watching **how** the customer is
-behaving during the session — mouse dynamics, typing cadence, pauses, scroll depth,
-confirmation-page dwell time — and comparing it to their own 90-day baseline.
+behaving during the session mouse dynamics, typing cadence, pauses, scroll depth,
+confirmation-page dwell time and comparing it to their own 90-day baseline.
 
 ## Status
 
-**Phase 1: Foundation** — scaffolding, infra, DB schema, API skeleton, CI.
+**Phase 1: Foundation** - scaffolding, infra, DB schema, API skeleton, CI.
 Nothing scores anything yet. See `docs/ROADMAP.md` (TODO) for phases 2-6.
 
 ## Quick start (dev)
@@ -23,11 +23,6 @@ cp .env.example .env
 docker compose up -d postgres redis kafka zookeeper
 docker compose up -d api
 ```
-
-Then:
-- API: http://localhost:8000/docs
-- MLflow: http://localhost:5000 (once ML phase is in)
-- Frontend: http://localhost:3000 (phase 5)
 
 Run the DB migrations the first time:
 
@@ -52,7 +47,7 @@ tests/     unit / integration / ml
 pytest tests/unit -v
 ```
 
-Integration and ML tests need the docker stack running — see `tests/README.md` (TODO).
+Integration and ML tests need the docker stack running see `tests/README.md` (TODO).
 
 ## Design notes
 

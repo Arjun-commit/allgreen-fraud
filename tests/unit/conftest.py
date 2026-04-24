@@ -1,9 +1,4 @@
-"""Unit-test-specific fixtures.
-
-Patches ML model inference so unit tests don't need trained model
-artifacts (.pt, .json) on disk. The real model tests in tests/ml/
-are NOT affected — they load the actual models.
-"""
+"""Unit-test fixtures — patches ML inference so no model artifacts are needed."""
 
 from __future__ import annotations
 

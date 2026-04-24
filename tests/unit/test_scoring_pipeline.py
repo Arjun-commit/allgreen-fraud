@@ -1,8 +1,4 @@
-"""Tests for the scoring pipeline.
-
-Exercises the full flow: events → features → LSTM → XGBoost → ensemble →
-friction decision, all in-memory with synthetic events.
-"""
+"""Tests for the scoring pipeline."""
 
 from __future__ import annotations
 

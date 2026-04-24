@@ -20,9 +20,9 @@ def build_classifier(
     scale_pos_weight: float = 10.0,
     seed: int = 42,
 ) -> xgb.XGBClassifier:
-    """Build the XGBClassifier with the blueprint's default hyperparams.
+    """Build the XGBClassifier with default hyperparams.
 
-    scale_pos_weight is set to 10 for synthetic data (we generate 10:1 ratio).
+    scale_pos_weight is set to 10 for synthetic data (10:1 ratio).
     Real training would use ~50 based on actual class distribution.
     """
     return xgb.XGBClassifier(

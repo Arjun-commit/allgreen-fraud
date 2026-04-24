@@ -5,7 +5,6 @@ Revises:
 Create Date: 2026-04-09
 
 Creates: users, sessions, session_events, transactions, friction_events, analyst_cases.
-Matches the blueprint §4 schemas.
 """
 
 import sqlalchemy as sa

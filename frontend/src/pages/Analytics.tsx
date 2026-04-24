@@ -1,12 +1,4 @@
-/**
- * Model Analytics page.
- *
- * Blueprint spec:
- *  - AUC/Precision/Recall display
- *  - Friction effectiveness stats
- *  - Score distribution histogram (current week vs last week)
- *  - Model drift alert placeholder
- */
+// Model analytics: performance metrics, friction effectiveness, score distributions.
 
 import { useEffect, useState } from "react";
 import {
@@ -106,7 +98,7 @@ export default function Analytics() {
           AUC / Precision / Recall Over Time
         </h2>
         <p className="text-xs text-gray-400">
-          Coming soon — requires historical metrics pipeline (MLflow integration in phase 6)
+          Coming soon — requires historical metrics pipeline
         </p>
         <div className="h-40 flex items-center justify-center bg-gray-50 rounded mt-2 text-gray-300 text-sm">
           Line chart placeholder

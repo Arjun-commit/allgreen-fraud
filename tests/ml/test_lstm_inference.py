@@ -1,8 +1,4 @@
-"""ML validation: LSTM inference on holdout data.
-
-These are slow-ish tests (generate data + run inference) so they live in
-tests/ml/ rather than tests/unit/ and run in a separate CI job.
-"""
+"""LSTM inference validation on holdout data."""
 
 from __future__ import annotations
 
@@ -29,7 +25,7 @@ def holdout_scores(holdout_data):
 
 
 def test_lstm_auc_above_threshold(holdout_scores) -> None:
-    """Blueprint target: AUC > 0.85 on holdout."""
+    """AUC should exceed 0.85 on holdout."""
     scores, y = holdout_scores
     auc = roc_auc_score(y, scores)
     print(f"LSTM holdout AUC: {auc:.4f}")
@@ -47,9 +43,8 @@ def _find_optimal_threshold(scores: np.ndarray, y: np.ndarray) -> float:
     """Find threshold that maximizes F1.
 
     The raw sigmoid output is uncalibrated on imbalanced data — scores
-    cluster near 0 for normal sessions. A fixed 0.5 cutoff doesn't work.
-    In production we'd convert to Z-scores against the user's baseline
-    (blueprint §7.1); here we just pick the empirically best threshold.
+    cluster near 0 for normal sessions. A fixed 0.5 cutoff doesn't work,
+    so we pick the empirically best threshold.
     """
     from sklearn.metrics import f1_score
 

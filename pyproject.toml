@@ -12,6 +12,8 @@ ignore = ["E501"]  # line-length handled by formatter; don't be noisy about it
 "ml/**" = ["N806", "N803", "N812"]
 "tests/ml/**" = ["N806"]
 "tests/data_generator.py" = ["N806"]
+# FastAPI Depends() in default args is the standard pattern
+"backend/api/middleware/auth.py" = ["B008"]
 
 [tool.mypy]
 python_version = "3.11"

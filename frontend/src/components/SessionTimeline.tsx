@@ -1,11 +1,5 @@
-/**
- * Horizontal bar showing session activity density over time.
- * Red zones = high pause density (suspicious).
- *
- * For now this is a placeholder that generates a visual from the
- * session_duration_ms. In prod we'd render actual event density
- * from the raw events.
- */
+// Activity density bar over time. Red zones = suspicious pauses.
+// Placeholder — in prod, render actual event density from raw events.
 
 interface SessionTimelineProps {
   durationMs: number;
